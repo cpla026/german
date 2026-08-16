@@ -100,8 +100,7 @@
     const learning = new Set(state.learning[state.level] || []);
     const fresh = all.filter((w) => !known.has(w.id) && !learning.has(w.id));
     const review = all.filter((w) => learning.has(w.id));
-    const mastered = all.filter((w) => known.has(w.id));
-    return [...fresh, ...review, ...mastered];
+    return [...fresh, ...review];
   }
 
   function addXp(n) {
@@ -203,17 +202,32 @@
   }
 
   function renderCards() {
+    const total = words().length;
+    const knownCount = knownSet().size;
     const list = deck();
+    const pct = total ? Math.round((knownCount / total) * 100) : 0;
+
     if (!list.length) {
-      view.innerHTML = `<div class="empty">这个等级还没有单词。</div>`;
+      view.innerHTML = `
+        <div class="progress-track"><div class="progress-bar" style="width:${pct}%"></div></div>
+        <p class="muted">已会 ${knownCount} / ${total}</p>
+        <article class="panel">
+          <p class="kicker">Fertig</p>
+          <h2 class="section-title" style="margin-bottom:8px">这个等级的词都点过「会了」</h2>
+          <p class="lede">进度已经记下。想再过一遍，可以在「进度」里清空本等级，或换一个等级。</p>
+          <div class="row-actions">
+            <button class="btn ghost" data-go="home">回首页</button>
+          </div>
+        </article>
+      `;
       return;
     }
+
     if (cardIndex >= list.length) cardIndex = 0;
     const w = list[cardIndex];
-    const known = knownSet().has(w.id);
     view.innerHTML = `
-      <div class="progress-track"><div class="progress-bar" style="width:${((cardIndex + 1) / list.length) * 100}%"></div></div>
-      <p class="muted">${cardIndex + 1} / ${list.length}${known ? " · 已会" : ""}</p>
+      <div class="progress-track"><div class="progress-bar" style="width:${pct}%"></div></div>
+      <p class="muted">已会 ${knownCount} / ${total} · 这组还剩 ${list.length} 张</p>
       <div class="card-stage">
         <div class="flip${cardFlipped ? " is-back" : ""}" id="flip-card" role="button" tabindex="0" aria-label="翻转卡片">
           <div class="face">
@@ -461,7 +475,8 @@
     if (mark) {
       const list = deck();
       const current = list[cardIndex];
-      const nextId = list[(cardIndex + 1) % list.length].id;
+      if (!current) return;
+      const nextId = list[(cardIndex + 1) % list.length]?.id;
       markWord(current.id, mark.dataset.mark);
       const nextList = deck();
       const found = nextList.findIndex((w) => w.id === nextId);

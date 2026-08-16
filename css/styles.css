@@ -399,6 +399,7 @@ p {
   height: 100%;
   background: var(--pine);
   width: 0;
+  transition: width 0.25s ease;
 }
 
 .tag {
